@@ -1,0 +1,243 @@
+# Creating Your First Hytale Plugin
+
+This guide walks you through creating a plugin from scratch.
+
+## Plugin Structure
+
+A Hytale plugin has this structure:
+
+```
+my-plugin/
+├── build.gradle           # Build configuration
+├── settings.gradle        # Project name
+├── gradle.properties      # Version and group
+├── src/main/
+│   ├── java/              # Java source code
+│   │   └── com/yourname/myplugin/
+│   │       ├── MyPlugin.java        # Main entry point
+│   │       └── commands/            # Custom commands
+│   └── resources/
+│       ├── manifest.json  # Plugin metadata
+│       ├── Common/        # Shared assets
+│       └── Server/        # Server-only data
+└── run/                   # Server runtime (generated)
+```
+
+## The Main Plugin Class
+
+Every plugin extends `JavaPlugin`:
+
+```java
+package com.yourname.myplugin;
+
+import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.server.core.plugin.JavaPlugin;
+import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+
+import javax.annotation.Nonnull;
+
+public class MyPlugin extends JavaPlugin {
+
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+
+    public MyPlugin(@Nonnull JavaPluginInit init) {
+        super(init);
+        LOGGER.atInfo().log("Plugin constructed: " + getName());
+    }
+
+    @Override
+    protected void setup() {
+        LOGGER.atInfo().log("Setting up " + getName());
+
+        // Register commands
+        getCommandRegistry().registerCommand(new HelloCommand());
+
+        // Register event listeners
+        getEventRegistry().register(PlayerConnectEvent.class, this::onPlayerConnect);
+    }
+
+    @Override
+    protected void start() {
+        LOGGER.atInfo().log(getName() + " started!");
+    }
+
+    @Override
+    protected void shutdown() {
+        LOGGER.atInfo().log(getName() + " shutting down...");
+    }
+
+    private void onPlayerConnect(PlayerConnectEvent event) {
+        LOGGER.atInfo().log("Player connected: " + event.getPlayer().getName());
+    }
+}
+```
+
+## Plugin Lifecycle
+
+1. **Constructor** - Called when plugin is instantiated
+2. **preLoad()** - Async config loading (optional)
+3. **setup()** - Register commands, events, assets
+4. **start()** - Post-initialization logic
+5. **shutdown()** - Cleanup before unload
+
+## Creating Commands
+
+```java
+package com.yourname.myplugin.commands;
+
+import com.hypixel.hytale.protocol.GameMode;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.command.system.CommandContext;
+import com.hypixel.hytale.server.core.command.system.basecommands.CommandBase;
+
+import javax.annotation.Nonnull;
+
+public class HelloCommand extends CommandBase {
+
+    public HelloCommand() {
+        super("hello", "Says hello to the player");
+        setPermissionGroup(GameMode.Adventure); // Anyone can use
+    }
+
+    @Override
+    protected void executeSync(@Nonnull CommandContext ctx) {
+        String playerName = ctx.getSource().getName();
+        ctx.sendMessage(Message.raw("Hello, " + playerName + "!"));
+    }
+}
+```
+
+### Command with Arguments
+
+```java
+public class TeleportCommand extends CommandBase {
+
+    public TeleportCommand() {
+        super("tp", "Teleport to coordinates");
+        setPermissionGroup(GameMode.Creative); // Only Creative mode
+
+        // Define arguments
+        addArgument("x", ArgumentType.DOUBLE);
+        addArgument("y", ArgumentType.DOUBLE);
+        addArgument("z", ArgumentType.DOUBLE);
+    }
+
+    @Override
+    protected void executeSync(@Nonnull CommandContext ctx) {
+        double x = ctx.getArgument("x", Double.class);
+        double y = ctx.getArgument("y", Double.class);
+        double z = ctx.getArgument("z", Double.class);
+
+        // Teleport player
+        ctx.getSource().getPlayer().teleport(x, y, z);
+        ctx.sendMessage(Message.raw("Teleported to " + x + ", " + y + ", " + z));
+    }
+}
+```
+
+## Registering Event Listeners
+
+```java
+@Override
+protected void setup() {
+    // Lambda style
+    getEventRegistry().register(PlayerConnectEvent.class, event -> {
+        LOGGER.atInfo().log("Player joined: " + event.getPlayer().getName());
+    });
+
+    // Method reference
+    getEventRegistry().register(PlayerDisconnectEvent.class, this::onDisconnect);
+
+    // With priority
+    getEventRegistry().register(EventPriority.EARLY, ChatEvent.class, this::onChat);
+
+    // Global events (world-level)
+    getEventRegistry().registerGlobal(ChunkPreLoadProcessEvent.class, this::onChunkLoad);
+}
+```
+
+## Configuration Files
+
+```java
+@Override
+protected CompletableFuture<Void> preLoad() {
+    // Load config asynchronously
+    return withConfig("config.json", MyConfig.class)
+        .thenAccept(config -> {
+            this.config = config;
+            LOGGER.atInfo().log("Config loaded: " + config.getSetting());
+        });
+}
+```
+
+## The manifest.json File
+
+```json
+{
+    "Group": "com.yourname",
+    "Name": "MyPlugin",
+    "Version": "1.0.0",
+    "Description": "My awesome plugin",
+    "Authors": [
+        { "Name": "Your Name" }
+    ],
+    "Website": "https://yoursite.com",
+    "ServerVersion": ">=1.0.0",
+    "Dependencies": {
+        "SomeOtherPlugin": ">=1.0.0"
+    },
+    "OptionalDependencies": {
+        "OptionalPlugin": "*"
+    },
+    "Main": "com.yourname.myplugin.MyPlugin",
+    "IncludesAssetPack": true
+}
+```
+
+## Building and Distributing
+
+### Build the JAR
+
+```bash
+./gradlew build
+```
+
+Output: `build/libs/my-plugin-1.0.0.jar`
+
+### Install Location
+
+Copy to:
+- Windows: `%appdata%/Hytale/UserData/Mods/`
+- Linux: `~/.local/share/Hytale/UserData/Mods/`
+
+## Debugging Tips
+
+1. **Use the Logger**
+   ```java
+   LOGGER.atInfo().log("Debug message");
+   LOGGER.atWarning().log("Warning!");
+   LOGGER.atSevere().log("Error occurred");
+   ```
+
+2. **Enable Debug Mode**
+   - Click the Bug icon instead of Play in IntelliJ
+   - Set breakpoints in the left margin
+
+3. **Hot Reload**
+   - Press `Ctrl+F9` to rebuild
+   - Some changes require server restart
+
+## Common Issues
+
+| Problem | Solution |
+|---------|----------|
+| Plugin not loading | Check `manifest.json` "Main" class path |
+| Command not found | Verify `registerCommand()` in `setup()` |
+| Events not firing | Check event class name and registration |
+| Connection refused | Run `auth login device` in server console |
+
+## Next Steps
+
+- Explore the decompiled API in `tools/decompiled-server/`
+- Check vanilla assets for examples in `assets/vanilla/`
+- Read [advanced patterns](https://britakee-studios.gitbook.io/hytale-modding-documentation/plugins-java-development/12-advanced-plugin-patterns)

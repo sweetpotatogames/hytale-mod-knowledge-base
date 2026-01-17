@@ -1,0 +1,149 @@
+# Hytale Server API Reference
+
+This directory contains documentation for the decompiled Hytale Server API.
+
+## Source Location
+
+The decompiled source is located at:
+```
+D:\source\hytale\tools\decompiled-server\
+```
+
+## Key Packages
+
+### Plugin System
+`com.hypixel.hytale.server.core.plugin`
+
+| Class | Description |
+|-------|-------------|
+| `JavaPlugin` | Base class for all plugins |
+| `JavaPluginInit` | Initialization data for plugins |
+| `PluginBase` | Abstract plugin foundation |
+| `PluginManager` | Manages plugin lifecycle |
+
+### Event System
+`com.hypixel.hytale.server.core.event`
+
+| Interface | Description |
+|-----------|-------------|
+| `IEvent` | Base event interface |
+| `IAsyncEvent` | Async event marker |
+| `ICancellable` | Cancellable event marker |
+
+Common events:
+- `PlayerConnectEvent`
+- `PlayerDisconnectEvent`
+- `ChatEvent`
+- `ChunkPreLoadProcessEvent`
+
+### Command System
+`com.hypixel.hytale.server.core.command`
+
+| Class | Description |
+|-------|-------------|
+| `CommandBase` | Base class for commands |
+| `CommandContext` | Execution context |
+| `CommandRegistry` | Command registration |
+| `ArgumentType` | Argument type definitions |
+
+### Registries
+`com.hypixel.hytale.server.core.registry`
+
+| Registry | Purpose |
+|----------|---------|
+| `CommandRegistry` | Register commands |
+| `EventRegistry` | Register event listeners |
+| `AssetRegistry` | Register custom assets |
+| `BlockStateRegistry` | Register block states |
+| `EntityRegistry` | Register entity types |
+| `TaskRegistry` | Schedule tasks |
+
+### Game Logic
+`com.hypixel.hytale.server.game`
+
+Core game mechanics and systems.
+
+### World System
+`com.hypixel.hytale.server.world`
+
+World and chunk management.
+
+### Entity System (ECS)
+`com.hypixel.hytale.server.entity`
+
+Entity-Component-System architecture.
+
+### Network Protocol
+`com.hypixel.hytale.server.network`
+
+QUIC-based network protocol with 268+ packet types.
+
+## Exploring the API
+
+### Search for Classes
+
+```powershell
+# Find all event classes
+Get-ChildItem -Recurse "D:\source\hytale\tools\decompiled-server" -Filter "*Event.java"
+
+# Find plugin-related classes
+Get-ChildItem -Recurse "D:\source\hytale\tools\decompiled-server\com\hypixel\hytale\server\core\plugin"
+```
+
+### Search for Methods
+
+```powershell
+# Find all methods containing "register"
+Select-String -Path "D:\source\hytale\tools\decompiled-server\**\*.java" -Pattern "public.*register"
+```
+
+## Common Patterns
+
+### Getting a Registry
+
+```java
+// In your plugin's setup() method
+CommandRegistry commands = getCommandRegistry();
+EventRegistry events = getEventRegistry();
+AssetRegistry assets = getAssetRegistry();
+```
+
+### Registering Events
+
+```java
+// Simple registration
+getEventRegistry().register(PlayerConnectEvent.class, event -> {
+    // Handle event
+});
+
+// With priority
+getEventRegistry().register(EventPriority.EARLY, ChatEvent.class, event -> {
+    // Handle early
+});
+```
+
+### Creating Tasks
+
+```java
+// Delayed task
+getTaskRegistry().runLater(() -> {
+    // Execute after delay
+}, 20); // 20 ticks = 1 second
+
+// Repeating task
+getTaskRegistry().runRepeating(() -> {
+    // Execute repeatedly
+}, 0, 20); // Every second
+```
+
+## External Documentation
+
+- [Official Modding Docs](https://britakee-studios.gitbook.io/hytale-modding-documentation)
+- [HytaleDocs API Reference](https://hytale-docs.com/docs/api/server-internals)
+- [Community GitHub](https://github.com/HytaleModding)
+
+## Notes
+
+- The server JAR is **not obfuscated** as of Early Access
+- API may change frequently during Early Access
+- Official source code release planned 1-2 months post-launch
