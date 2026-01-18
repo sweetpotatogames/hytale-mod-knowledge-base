@@ -1,0 +1,15 @@
+{
+    "TranslationProperties": {
+        "Name": "Basic Ley Line",
+        "Description": "A basic arcane conduit that transmits magical power. Power decays by 1 per block."
+    },
+    "Quality": "Common",
+    "MaxStack": 64,
+    "Categories": ["Building", "ArcaneConduits"],
+    "Tags": {
+        "Type": ["Conduit", "ArcaneConduits"]
+    },
+    "Block": {
+        "Id": "arcaneconduits:Leyline_Basic"
+    }
+}

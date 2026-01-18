@@ -1,0 +1,28 @@
+{
+    "Group": "@ArcaneConduits",
+    "DrawType": "Model",
+    "Material": "Crystal",
+    "Opacity": "Transparent",
+    "Light": {
+        "R": 150,
+        "G": 80,
+        "B": 255,
+        "Intensity": 1.0
+    },
+    "State": {
+        "Type": "PowerSourceBlockState",
+        "OutputPower": 15,
+        "Constant": true
+    },
+    "InteractionStates": {
+        "default": {},
+        "active": {
+            "Light": {
+                "R": 180,
+                "G": 100,
+                "B": 255,
+                "Intensity": 1.5
+            }
+        }
+    }
+}

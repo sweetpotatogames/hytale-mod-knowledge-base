@@ -1,0 +1,15 @@
+{
+    "TranslationProperties": {
+        "Name": "Mana Crystal Core",
+        "Description": "A powerful arcane power source. Outputs maximum power (15) constantly by absorbing ambient mana."
+    },
+    "Quality": "Legendary",
+    "MaxStack": 16,
+    "Categories": ["Building", "ArcaneConduits"],
+    "Tags": {
+        "Type": ["PowerSource", "ArcaneConduits"]
+    },
+    "Block": {
+        "Id": "arcaneconduits:Mana_Crystal_Core"
+    }
+}

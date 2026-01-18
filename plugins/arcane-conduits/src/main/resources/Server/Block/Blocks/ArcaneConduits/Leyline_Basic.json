@@ -1,0 +1,48 @@
+{
+    "Group": "@ArcaneConduits",
+    "DrawType": "Model",
+    "Material": "Stone",
+    "Opacity": "Transparent",
+    "Light": {
+        "R": 100,
+        "G": 50,
+        "B": 200,
+        "Intensity": 0.2
+    },
+    "State": {
+        "Type": "ConduitBlockState",
+        "MaxPower": 15,
+        "DecayRate": 1
+    },
+    "TickProcedure": {
+        "Type": "ConduitTick",
+        "DecayRate": 1
+    },
+    "InteractionStates": {
+        "default": {},
+        "powered_low": {
+            "Light": {
+                "R": 100,
+                "G": 50,
+                "B": 200,
+                "Intensity": 0.4
+            }
+        },
+        "powered_medium": {
+            "Light": {
+                "R": 120,
+                "G": 60,
+                "B": 220,
+                "Intensity": 0.6
+            }
+        },
+        "powered_high": {
+            "Light": {
+                "R": 150,
+                "G": 80,
+                "B": 255,
+                "Intensity": 0.9
+            }
+        }
+    }
+}
