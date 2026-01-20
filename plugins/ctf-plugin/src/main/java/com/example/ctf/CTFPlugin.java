@@ -14,7 +14,7 @@ import com.example.ctf.team.TeamVisualManager;
 import com.example.ctf.ui.CTFAnnouncementManager;
 import com.example.ctf.ui.CTFScoreHud;
 import com.example.ctf.ui.CTFSoundManager;
-import com.hypixel.hytale.server.core.event.universe.world.AddWorldEvent;
+import com.hypixel.hytale.server.core.universe.world.events.AddWorldEvent;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
@@ -117,7 +117,8 @@ public class CTFPlugin extends JavaPlugin {
 
         // Initialize event handlers
         flagEventHandler = new FlagEventHandler(this);
-        buildingProtectionHandler = new BuildingProtectionHandler(this);
+        // TODO: BuildingProtectionHandler needs ECS system rewrite
+        // buildingProtectionHandler = new BuildingProtectionHandler(this);
 
         // Initialize spawn system
         spawnProvider = new CTFSpawnProvider(this, null);

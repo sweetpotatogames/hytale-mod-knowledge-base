@@ -10,8 +10,12 @@
     ],
     "Website": "example.org",
     "ServerVersion": "*",
-    "Dependencies": {},
-    "OptionalDependencies": {},
+    "Dependencies": {
+        
+    },
+    "OptionalDependencies": {
+        
+    },
     "DisabledByDefault": false,
     "Main": "com.example.ctf.CTFPlugin",
     "IncludesAssetPack": true

@@ -147,7 +147,7 @@ public class CTFScoreHud extends CustomUIHud {
      * @param plugin The CTF plugin instance
      */
     public static void showToPlayer(@Nonnull PlayerRef playerRef, @Nonnull CTFPlugin plugin) {
-        UUID playerUuid = playerRef.getUUID();
+        UUID playerUuid = playerRef.getUuid();
 
         // Create new HUD for this player
         CTFScoreHud hud = new CTFScoreHud(playerRef, plugin);
@@ -158,7 +158,7 @@ public class CTFScoreHud extends CustomUIHud {
         if (playerComponent != null) {
             HudManager hudManager = playerComponent.getHudManager();
             hudManager.setCustomHud(playerRef, hud);
-            plugin.getLogger().atDebug().log("Showing score HUD to player {}", playerUuid);
+            plugin.getLogger().atInfo().log("Showing score HUD to player {}", playerUuid);
         }
     }
 
@@ -168,7 +168,7 @@ public class CTFScoreHud extends CustomUIHud {
      * @param playerRef The player to hide the HUD from
      */
     public static void hideFromPlayer(@Nonnull PlayerRef playerRef) {
-        UUID playerUuid = playerRef.getUUID();
+        UUID playerUuid = playerRef.getUuid();
         CTFScoreHud hud = activeHuds.remove(playerUuid);
 
         if (hud != null) {
@@ -201,9 +201,9 @@ public class CTFScoreHud extends CustomUIHud {
      */
     public static void showToAllPlayers(@Nonnull CTFPlugin plugin, int initialRedScore, int initialBlueScore) {
         for (World world : Universe.get().getWorlds().values()) {
-            for (PlayerRef playerRef : world.getPlayers()) {
+            for (PlayerRef playerRef : world.getPlayerRefs()) {
                 showToPlayer(playerRef, plugin);
-                CTFScoreHud hud = activeHuds.get(playerRef.getUUID());
+                CTFScoreHud hud = activeHuds.get(playerRef.getUuid());
                 if (hud != null) {
                     hud.updateScore(initialRedScore, initialBlueScore);
                 }
@@ -216,7 +216,7 @@ public class CTFScoreHud extends CustomUIHud {
      */
     public static void hideFromAllPlayers() {
         for (World world : Universe.get().getWorlds().values()) {
-            for (PlayerRef playerRef : world.getPlayers()) {
+            for (PlayerRef playerRef : world.getPlayerRefs()) {
                 hideFromPlayer(playerRef);
             }
         }

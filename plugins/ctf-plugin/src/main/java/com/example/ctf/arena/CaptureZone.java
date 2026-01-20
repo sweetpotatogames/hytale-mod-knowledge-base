@@ -1,9 +1,9 @@
 package com.example.ctf.arena;
 
-import com.hypixel.hytale.codec.BuilderCodec;
+import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
-import com.hypixel.hytale.codec.Validators;
+import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.math.vector.Vector3d;
 
 import javax.annotation.Nonnull;
@@ -17,11 +17,20 @@ public class CaptureZone {
     public static final double DEFAULT_RADIUS = 3.0;
 
     public static final BuilderCodec<CaptureZone> CODEC = BuilderCodec.builder(CaptureZone.class, CaptureZone::new)
-        .appendInherited(new KeyedCodec<>("Center", Vector3d.CODEC), CaptureZone::getCenter, CaptureZone::setCenter)
+        .<Vector3d>appendInherited(
+            new KeyedCodec<>("Center", Vector3d.CODEC),
+            (o, v) -> o.center = v,
+            o -> o.center,
+            (o, p) -> o.center = p.center
+        )
         .addValidator(Validators.nonNull())
         .add()
-        .appendInherited(new KeyedCodec<>("Radius", Codec.DOUBLE), CaptureZone::getRadius, CaptureZone::setRadius)
-        .addDefault(DEFAULT_RADIUS)
+        .<Double>appendInherited(
+            new KeyedCodec<>("Radius", Codec.DOUBLE),
+            (o, v) -> o.radius = v,
+            o -> o.radius,
+            (o, p) -> o.radius = p.radius
+        )
         .add()
         .build();
 
@@ -49,9 +58,9 @@ public class CaptureZone {
      * @return true if the position is within the zone radius
      */
     public boolean contains(@Nonnull Vector3d position) {
-        double dx = position.x() - center.x();
-        double dy = position.y() - center.y();
-        double dz = position.z() - center.z();
+        double dx = position.getX() - center.getX();
+        double dy = position.getY() - center.getY();
+        double dz = position.getZ() - center.getZ();
         double distanceSquared = dx * dx + dy * dy + dz * dz;
         return distanceSquared <= radius * radius;
     }

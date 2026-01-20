@@ -1,9 +1,9 @@
 package com.example.ctf.arena;
 
-import com.hypixel.hytale.codec.BuilderCodec;
+import com.hypixel.hytale.codec.builder.BuilderCodec;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
-import com.hypixel.hytale.codec.Validators;
+import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 
@@ -16,13 +16,28 @@ import javax.annotation.Nonnull;
 public class ProtectedRegion {
 
     public static final BuilderCodec<ProtectedRegion> CODEC = BuilderCodec.builder(ProtectedRegion.class, ProtectedRegion::new)
-        .appendInherited(new KeyedCodec<>("Name", Codec.STRING), ProtectedRegion::getName, ProtectedRegion::setName)
+        .<String>appendInherited(
+            new KeyedCodec<>("Name", Codec.STRING),
+            (o, v) -> o.name = v,
+            o -> o.name,
+            (o, p) -> o.name = p.name
+        )
         .addValidator(Validators.nonNull())
         .add()
-        .appendInherited(new KeyedCodec<>("Min", Vector3d.CODEC), ProtectedRegion::getMin, ProtectedRegion::setMin)
+        .<Vector3d>appendInherited(
+            new KeyedCodec<>("Min", Vector3d.CODEC),
+            (o, v) -> o.min = v,
+            o -> o.min,
+            (o, p) -> o.min = p.min
+        )
         .addValidator(Validators.nonNull())
         .add()
-        .appendInherited(new KeyedCodec<>("Max", Vector3d.CODEC), ProtectedRegion::getMax, ProtectedRegion::setMax)
+        .<Vector3d>appendInherited(
+            new KeyedCodec<>("Max", Vector3d.CODEC),
+            (o, v) -> o.max = v,
+            o -> o.max,
+            (o, p) -> o.max = p.max
+        )
         .addValidator(Validators.nonNull())
         .add()
         .build();
@@ -41,14 +56,14 @@ public class ProtectedRegion {
         this.name = name;
         // Normalize min/max to ensure min values are actually smaller
         this.min = new Vector3d(
-            Math.min(min.x(), max.x()),
-            Math.min(min.y(), max.y()),
-            Math.min(min.z(), max.z())
+            Math.min(min.getX(), max.getX()),
+            Math.min(min.getY(), max.getY()),
+            Math.min(min.getZ(), max.getZ())
         );
         this.max = new Vector3d(
-            Math.max(min.x(), max.x()),
-            Math.max(min.y(), max.y()),
-            Math.max(min.z(), max.z())
+            Math.max(min.getX(), max.getX()),
+            Math.max(min.getY(), max.getY()),
+            Math.max(min.getZ(), max.getZ())
         );
     }
 
@@ -59,9 +74,9 @@ public class ProtectedRegion {
      * @return true if the block is within the protected region
      */
     public boolean containsBlock(@Nonnull Vector3i blockPos) {
-        return blockPos.x() >= min.x() && blockPos.x() <= max.x()
-            && blockPos.y() >= min.y() && blockPos.y() <= max.y()
-            && blockPos.z() >= min.z() && blockPos.z() <= max.z();
+        return blockPos.getX() >= min.getX() && blockPos.getX() <= max.getX()
+            && blockPos.getY() >= min.getY() && blockPos.getY() <= max.getY()
+            && blockPos.getZ() >= min.getZ() && blockPos.getZ() <= max.getZ();
     }
 
     /**
@@ -71,9 +86,9 @@ public class ProtectedRegion {
      * @return true if the position is within the protected region
      */
     public boolean contains(@Nonnull Vector3d position) {
-        return position.x() >= min.x() && position.x() <= max.x()
-            && position.y() >= min.y() && position.y() <= max.y()
-            && position.z() >= min.z() && position.z() <= max.z();
+        return position.getX() >= min.getX() && position.getX() <= max.getX()
+            && position.getY() >= min.getY() && position.getY() <= max.getY()
+            && position.getZ() >= min.getZ() && position.getZ() <= max.getZ();
     }
 
     @Nonnull

@@ -7,12 +7,9 @@ import com.example.ctf.team.TeamVisualManager;
 import com.example.ctf.ui.CTFScoreHud;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.server.core.entity.TransformComponent;
-import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.event.events.ecs.DropItemEvent;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
-import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
@@ -36,11 +33,12 @@ public class FlagEventHandler {
     }
 
     private void registerEvents() {
-        // Listen for drop item requests (G key)
-        plugin.getEventRegistry().register(
-            DropItemEvent.PlayerRequest.class,
-            this::onDropItemRequest
-        );
+        // TODO: DropItemEvent.PlayerRequest is an ECS event and needs EntityEventSystem integration
+        // The flag drop via G key feature is disabled until ECS event handling is implemented
+        // plugin.getEventRegistry().register(
+        //     DropItemEvent.PlayerRequest.class,
+        //     this::onDropItemRequest
+        // );
 
         // Listen for player connect/disconnect for HUD and team management
         plugin.getEventRegistry().registerGlobal(
@@ -56,72 +54,20 @@ public class FlagEventHandler {
         plugin.getLogger().atInfo().log("FlagEventHandler: Event listeners registered");
     }
 
-    /**
+    /*
+     * TODO: ECS Event Handler - Disabled until EntityEventSystem integration
      * Called when a player presses G to drop an item.
      * If they're dropping the flag item, we handle it specially.
+     *
+     * ECS events like DropItemEvent.PlayerRequest don't have getEntityRef()
+     * because they're processed through the ECS system where entity context
+     * is provided differently (via system iteration).
+     *
+     * To implement this feature, we need to:
+     * 1. Register an EntityEventSystem that handles DropItemEvent.PlayerRequest
+     * 2. The system will receive entity context through the ECS framework
+     * 3. Check if the dropping player is a flag carrier and handle accordingly
      */
-    private void onDropItemRequest(@Nonnull DropItemEvent.PlayerRequest event) {
-        // Get the player from the event context
-        Ref<EntityStore> entityRef = event.getEntityRef();
-        if (entityRef == null || !entityRef.isValid()) {
-            return;
-        }
-
-        Player player = entityRef.getStore().getComponent(entityRef, Player.getComponentType());
-        if (player == null) {
-            return;
-        }
-
-        PlayerRef playerRef = player.getPlayerRef();
-        if (playerRef == null) {
-            return;
-        }
-
-        UUID playerUuid = playerRef.getUuid();
-        FlagCarrierManager flagManager = plugin.getFlagCarrierManager();
-
-        // Check if this player is carrying a flag
-        if (!flagManager.isCarryingFlag(playerUuid)) {
-            return;
-        }
-
-        // Check if they're trying to drop from slot 0 (the flag slot)
-        if (event.getSlotId() != 0) {
-            // Not dropping from the flag slot, allow normal behavior
-            return;
-        }
-
-        // Check if the item being dropped is a flag
-        ItemStack droppingItem = player.getInventory().getHotbar().getItemStack(event.getSlotId());
-        if (droppingItem == null || ItemStack.isEmpty(droppingItem)) {
-            return;
-        }
-
-        String itemId = droppingItem.getItem().getId();
-        if (itemId == null || !itemId.startsWith("CTF_Flag")) {
-            return;
-        }
-
-        // Cancel the normal drop - we handle it specially
-        event.setCancelled(true);
-
-        // Get player position for drop location
-        TransformComponent transform = entityRef.getStore()
-            .getComponent(entityRef, TransformComponent.getComponentType());
-
-        Vector3d dropPosition;
-        if (transform != null) {
-            dropPosition = transform.getTranslation();
-        } else {
-            dropPosition = new Vector3d(0, 0, 0);
-        }
-
-        // Drop the flag through our manager
-        flagManager.dropFlag(playerUuid, dropPosition);
-
-        plugin.getLogger().atInfo().log("Player {} dropped flag via G key at {}",
-            playerUuid, dropPosition);
-    }
 
     /**
      * Called when a player connects to the server.
@@ -146,7 +92,7 @@ public class FlagEventHandler {
             }
         }
 
-        plugin.getLogger().atDebug().log("Player {} connected", playerRef.getUuid());
+        plugin.getLogger().atInfo().log("Player {} connected", playerRef.getUuid());
     }
 
     /**
@@ -186,13 +132,13 @@ public class FlagEventHandler {
                 TransformComponent transform = entityRef.getStore()
                     .getComponent(entityRef, TransformComponent.getComponentType());
                 if (transform != null) {
-                    dropPosition = transform.getTranslation();
+                    dropPosition = transform.getPosition();
                 }
             }
             flagManager.dropFlag(playerUuid, dropPosition);
         }
 
-        plugin.getLogger().atDebug().log("Player {} disconnected, cleaned up CTF state", playerUuid);
+        plugin.getLogger().atInfo().log("Player {} disconnected, cleaned up CTF state", playerUuid);
     }
 
 }

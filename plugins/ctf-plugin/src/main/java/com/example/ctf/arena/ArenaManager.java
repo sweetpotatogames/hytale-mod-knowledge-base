@@ -294,67 +294,33 @@ public class ArenaManager {
      */
     @Nonnull
     private Path getPresetsDir() {
-        return plugin.getDataFolder().resolve("presets");
+        return plugin.getDataDirectory().resolve("presets");
     }
 
     /**
      * Saves the current arena configuration as a named preset.
+     * TODO: Implement proper JSON serialization using Codec API
      *
      * @param name The preset name
      * @return true if saved successfully
      */
     public boolean savePreset(@Nonnull String name) {
-        try {
-            Path presetsDir = getPresetsDir();
-            Files.createDirectories(presetsDir);
-
-            Path presetFile = presetsDir.resolve(name + ".json");
-            ArenaConfig currentConfig = getConfig();
-
-            // Encode config to JSON and write
-            String json = Codec.encodeToJson(ArenaConfig.CODEC, currentConfig);
-            Files.writeString(presetFile, json);
-
-            plugin.getLogger().atInfo().log("Saved preset '{}' to {}", name, presetFile);
-            return true;
-        } catch (IOException e) {
-            plugin.getLogger().atWarning().withCause(e).log("Failed to save preset '{}'", name);
-            return false;
-        }
+        // TODO: Codec serialization needs proper implementation
+        plugin.getLogger().atWarning().log("Preset saving not yet implemented");
+        return false;
     }
 
     /**
      * Loads a preset and applies it to the current configuration.
+     * TODO: Implement proper JSON deserialization using Codec API
      *
      * @param name The preset name
      * @return true if loaded successfully
      */
     public boolean loadPreset(@Nonnull String name) {
-        try {
-            Path presetFile = getPresetsDir().resolve(name + ".json");
-            if (!Files.exists(presetFile)) {
-                plugin.getLogger().atWarning().log("Preset '{}' not found", name);
-                return false;
-            }
-
-            String json = Files.readString(presetFile);
-            ArenaConfig loadedConfig = Codec.decodeFromJson(ArenaConfig.CODEC, json);
-
-            // Apply loaded config values to current config
-            ArenaConfig currentConfig = getConfig();
-            currentConfig.setRedSpawns(loadedConfig.getRedSpawns());
-            currentConfig.setBlueSpawns(loadedConfig.getBlueSpawns());
-            currentConfig.setRedCaptureZone(loadedConfig.getRedCaptureZone());
-            currentConfig.setBlueCaptureZone(loadedConfig.getBlueCaptureZone());
-            currentConfig.setProtectedRegions(loadedConfig.getProtectedRegions());
-            currentConfig.setScoreLimit(loadedConfig.getScoreLimit());
-
-            plugin.getLogger().atInfo().log("Loaded preset '{}' from {}", name, presetFile);
-            return true;
-        } catch (IOException e) {
-            plugin.getLogger().atWarning().withCause(e).log("Failed to load preset '{}'", name);
-            return false;
-        }
+        // TODO: Codec deserialization needs proper implementation
+        plugin.getLogger().atWarning().log("Preset loading not yet implemented");
+        return false;
     }
 
     /**

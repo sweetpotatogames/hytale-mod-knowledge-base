@@ -16,6 +16,7 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.SimpleInstantInteraction;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.TargetUtil;
 
@@ -142,9 +143,16 @@ public class CTFSetupInteraction extends SimpleInstantInteraction {
             return;
         }
 
-        // Check if player has op/admin permissions
-        if (!playerComponent.isOp()) {
-            playerComponent.sendMessage(Message.raw("§cYou need operator permissions to use the CTF Setup Tool."));
+        // Get PlayerRef for messaging
+        @SuppressWarnings("deprecation")
+        PlayerRef playerRef = playerComponent.getPlayerRef();
+        if (playerRef == null) {
+            return;
+        }
+
+        // Check if player has admin permissions
+        if (!playerComponent.hasPermission("ctf.admin")) {
+            playerRef.sendMessage(Message.raw("§cYou need admin permissions to use the CTF Setup Tool."));
             return;
         }
 
@@ -155,7 +163,7 @@ public class CTFSetupInteraction extends SimpleInstantInteraction {
         // Get the block the player is looking at
         Vector3i targetBlock = TargetUtil.getTargetBlock(ref, 200.0, commandBuffer);
         if (targetBlock == null) {
-            playerComponent.sendMessage(Message.raw("§cNo block in range. Look at a block and try again."));
+            playerRef.sendMessage(Message.raw("§cNo block in range. Look at a block and try again."));
             return;
         }
 
@@ -166,62 +174,62 @@ public class CTFSetupInteraction extends SimpleInstantInteraction {
         // Get the CTF plugin
         CTFPlugin plugin = CTFPlugin.get();
         if (plugin == null || plugin.getArenaManager() == null) {
-            playerComponent.sendMessage(Message.raw("§cCTF Plugin is not initialized."));
+            playerRef.sendMessage(Message.raw("§cCTF Plugin is not initialized."));
             return;
         }
 
         SetupMode mode = getPlayerMode(playerUuid);
-        Vector3d blockCenter = new Vector3d(targetBlock.x + 0.5, targetBlock.y + 1.0, targetBlock.z + 0.5);
+        Vector3d blockCenter = new Vector3d(targetBlock.getX() + 0.5, targetBlock.getY() + 1.0, targetBlock.getZ() + 0.5);
 
         switch (mode) {
-            case RED_SPAWN -> handleSpawnSet(playerComponent, plugin, FlagTeam.RED, blockCenter, transformComponent);
-            case BLUE_SPAWN -> handleSpawnSet(playerComponent, plugin, FlagTeam.BLUE, blockCenter, transformComponent);
-            case RED_CAPTURE -> handleCaptureSet(playerComponent, plugin, FlagTeam.RED, blockCenter);
-            case BLUE_CAPTURE -> handleCaptureSet(playerComponent, plugin, FlagTeam.BLUE, blockCenter);
-            case RED_FLAG -> handleFlagStandSet(playerComponent, plugin, FlagTeam.RED, blockCenter);
-            case BLUE_FLAG -> handleFlagStandSet(playerComponent, plugin, FlagTeam.BLUE, blockCenter);
-            case PROTECT_1 -> handleProtectCorner1(playerComponent, playerUuid, targetBlock);
-            case PROTECT_2 -> handleProtectCorner2(playerComponent, playerUuid, plugin, targetBlock);
+            case RED_SPAWN -> handleSpawnSet(playerRef, plugin, FlagTeam.RED, blockCenter, transformComponent);
+            case BLUE_SPAWN -> handleSpawnSet(playerRef, plugin, FlagTeam.BLUE, blockCenter, transformComponent);
+            case RED_CAPTURE -> handleCaptureSet(playerRef, plugin, FlagTeam.RED, blockCenter);
+            case BLUE_CAPTURE -> handleCaptureSet(playerRef, plugin, FlagTeam.BLUE, blockCenter);
+            case RED_FLAG -> handleFlagStandSet(playerRef, plugin, FlagTeam.RED, blockCenter);
+            case BLUE_FLAG -> handleFlagStandSet(playerRef, plugin, FlagTeam.BLUE, blockCenter);
+            case PROTECT_1 -> handleProtectCorner1(playerRef, playerUuid, targetBlock);
+            case PROTECT_2 -> handleProtectCorner2(playerRef, playerUuid, plugin, targetBlock);
         }
     }
 
-    private void handleSpawnSet(Player player, CTFPlugin plugin, FlagTeam team, Vector3d position, TransformComponent transform) {
+    private void handleSpawnSet(PlayerRef playerRef, CTFPlugin plugin, FlagTeam team, Vector3d position, TransformComponent transform) {
         // Create transform with player's rotation for spawn direction
         Transform spawnTransform = new Transform(position, transform.getRotation());
         plugin.getArenaManager().addSpawnPoint(team, spawnTransform);
 
         String color = team == FlagTeam.RED ? "§c" : "§9";
-        player.sendMessage(Message.raw(color + "Added " + team.getDisplayName() + " spawn point at " + formatPosition(position)));
+        playerRef.sendMessage(Message.raw(color + "Added " + team.getDisplayName() + " spawn point at " + formatPosition(position)));
     }
 
-    private void handleCaptureSet(Player player, CTFPlugin plugin, FlagTeam team, Vector3d position) {
+    private void handleCaptureSet(PlayerRef playerRef, CTFPlugin plugin, FlagTeam team, Vector3d position) {
         plugin.getArenaManager().setCaptureZone(team, position, DEFAULT_CAPTURE_RADIUS);
 
         String color = team == FlagTeam.RED ? "§c" : "§9";
-        player.sendMessage(Message.raw(color + "Set " + team.getDisplayName() + " capture zone at " + formatPosition(position) + " (radius: " + DEFAULT_CAPTURE_RADIUS + ")"));
+        playerRef.sendMessage(Message.raw(color + "Set " + team.getDisplayName() + " capture zone at " + formatPosition(position) + " (radius: " + DEFAULT_CAPTURE_RADIUS + ")"));
     }
 
-    private void handleFlagStandSet(Player player, CTFPlugin plugin, FlagTeam team, Vector3d position) {
+    private void handleFlagStandSet(PlayerRef playerRef, CTFPlugin plugin, FlagTeam team, Vector3d position) {
         plugin.getFlagCarrierManager().setFlagStandPosition(team, position);
 
         String color = team == FlagTeam.RED ? "§c" : "§9";
-        player.sendMessage(Message.raw(color + "Set " + team.getDisplayName() + " flag stand at " + formatPosition(position)));
+        playerRef.sendMessage(Message.raw(color + "Set " + team.getDisplayName() + " flag stand at " + formatPosition(position)));
     }
 
-    private void handleProtectCorner1(Player player, UUID playerUuid, Vector3i block) {
+    private void handleProtectCorner1(PlayerRef playerRef, UUID playerUuid, Vector3i block) {
         pendingCorner1.put(playerUuid, block);
-        player.sendMessage(Message.raw("§eProtected region corner 1 set at " + formatBlockPosition(block)));
-        player.sendMessage(Message.raw("§7Now click on the opposite corner (or cycle to PROTECT_2 mode first)."));
+        playerRef.sendMessage(Message.raw("§eProtected region corner 1 set at " + formatBlockPosition(block)));
+        playerRef.sendMessage(Message.raw("§7Now click on the opposite corner (or cycle to PROTECT_2 mode first)."));
 
         // Auto-advance to corner 2 mode
         playerModes.put(playerUuid, SetupMode.PROTECT_2);
-        player.sendMessage(Message.raw("§aSwitched to: Protection Corner 2"));
+        playerRef.sendMessage(Message.raw("§aSwitched to: Protection Corner 2"));
     }
 
-    private void handleProtectCorner2(Player player, UUID playerUuid, CTFPlugin plugin, Vector3i block) {
+    private void handleProtectCorner2(PlayerRef playerRef, UUID playerUuid, CTFPlugin plugin, Vector3i block) {
         Vector3i corner1 = pendingCorner1.get(playerUuid);
         if (corner1 == null) {
-            player.sendMessage(Message.raw("§cNo first corner set. Switch to PROTECT_1 mode and set corner 1 first."));
+            playerRef.sendMessage(Message.raw("§cNo first corner set. Switch to PROTECT_1 mode and set corner 1 first."));
             return;
         }
 
@@ -236,11 +244,11 @@ public class CTFSetupInteraction extends SimpleInstantInteraction {
         pendingCorner1.remove(playerUuid);
         pendingRegionNames.remove(playerUuid);
 
-        player.sendMessage(Message.raw("§aCreated protected region '" + regionName + "' from " + formatBlockPosition(corner1) + " to " + formatBlockPosition(block)));
+        playerRef.sendMessage(Message.raw("§aCreated protected region '" + regionName + "' from " + formatBlockPosition(corner1) + " to " + formatBlockPosition(block)));
 
         // Return to first protect mode for next region
         playerModes.put(playerUuid, SetupMode.PROTECT_1);
-        player.sendMessage(Message.raw("§aSwitched to: Protection Corner 1"));
+        playerRef.sendMessage(Message.raw("§aSwitched to: Protection Corner 1"));
     }
 
     private String formatPosition(Vector3d pos) {

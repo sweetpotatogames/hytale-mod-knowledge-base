@@ -3,7 +3,6 @@
     "Name": "ctf.items.flag_red.name",
     "Description": "ctf.items.flag_red.description"
   },
-  "Icon": "Icons/CTF/Flag_Red.png",
   "Quality": "Rare",
   "MaxStack": 1,
   "PlayerAnimationsId": "Item",

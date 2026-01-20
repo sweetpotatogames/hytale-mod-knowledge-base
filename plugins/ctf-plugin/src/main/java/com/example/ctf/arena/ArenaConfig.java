@@ -17,45 +17,47 @@ import javax.annotation.Nullable;
 public class ArenaConfig {
 
     public static final BuilderCodec<ArenaConfig> CODEC = BuilderCodec.builder(ArenaConfig.class, ArenaConfig::new)
-        .appendInherited(
+        .<Transform[]>appendInherited(
             new KeyedCodec<>("RedSpawns", ArrayCodec.ofBuilderCodec(Transform.CODEC_DEGREES, Transform[]::new)),
-            ArenaConfig::getRedSpawns,
-            ArenaConfig::setRedSpawns
+            (o, v) -> o.redSpawns = v,
+            o -> o.redSpawns,
+            (o, p) -> o.redSpawns = p.redSpawns
         )
-        .addDefault(new Transform[0])
         .add()
-        .appendInherited(
+        .<Transform[]>appendInherited(
             new KeyedCodec<>("BlueSpawns", ArrayCodec.ofBuilderCodec(Transform.CODEC_DEGREES, Transform[]::new)),
-            ArenaConfig::getBlueSpawns,
-            ArenaConfig::setBlueSpawns
+            (o, v) -> o.blueSpawns = v,
+            o -> o.blueSpawns,
+            (o, p) -> o.blueSpawns = p.blueSpawns
         )
-        .addDefault(new Transform[0])
         .add()
-        .appendInherited(
+        .<CaptureZone>appendInherited(
             new KeyedCodec<>("RedCaptureZone", CaptureZone.CODEC),
-            ArenaConfig::getRedCaptureZone,
-            ArenaConfig::setRedCaptureZone
+            (o, v) -> o.redCaptureZone = v,
+            o -> o.redCaptureZone,
+            (o, p) -> o.redCaptureZone = p.redCaptureZone
         )
         .add()
-        .appendInherited(
+        .<CaptureZone>appendInherited(
             new KeyedCodec<>("BlueCaptureZone", CaptureZone.CODEC),
-            ArenaConfig::getBlueCaptureZone,
-            ArenaConfig::setBlueCaptureZone
+            (o, v) -> o.blueCaptureZone = v,
+            o -> o.blueCaptureZone,
+            (o, p) -> o.blueCaptureZone = p.blueCaptureZone
         )
         .add()
-        .appendInherited(
+        .<ProtectedRegion[]>appendInherited(
             new KeyedCodec<>("ProtectedRegions", ArrayCodec.ofBuilderCodec(ProtectedRegion.CODEC, ProtectedRegion[]::new)),
-            ArenaConfig::getProtectedRegions,
-            ArenaConfig::setProtectedRegions
+            (o, v) -> o.protectedRegions = v,
+            o -> o.protectedRegions,
+            (o, p) -> o.protectedRegions = p.protectedRegions
         )
-        .addDefault(new ProtectedRegion[0])
         .add()
-        .appendInherited(
+        .<Integer>appendInherited(
             new KeyedCodec<>("ScoreLimit", Codec.INTEGER),
-            ArenaConfig::getScoreLimit,
-            ArenaConfig::setScoreLimit
+            (o, v) -> o.scoreLimit = v,
+            o -> o.scoreLimit,
+            (o, p) -> o.scoreLimit = p.scoreLimit
         )
-        .addDefault(3)
         .add()
         .build();
 

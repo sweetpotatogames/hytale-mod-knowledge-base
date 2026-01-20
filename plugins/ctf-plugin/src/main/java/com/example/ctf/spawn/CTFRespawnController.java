@@ -5,6 +5,8 @@ import com.example.ctf.FlagTeam;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.math.vector.Transform;
+import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.asset.type.gameplay.respawn.RespawnController;
@@ -53,11 +55,14 @@ public class CTFRespawnController implements RespawnController {
             return;
         }
 
-        // Teleport to team spawn
-        Teleport teleportComponent = Teleport.createForPlayer(spawnPoint.clone());
+        // Teleport to team spawn - use constructor directly
+        Teleport teleportComponent = new Teleport(
+            spawnPoint.getPosition(),
+            spawnPoint.getRotation()
+        );
         commandBuffer.addComponent(playerReference, Teleport.getComponentType(), teleportComponent);
 
-        plugin.getLogger().atDebug().log("Respawned player {} at {} team spawn", playerUuid, team);
+        plugin.getLogger().atInfo().log("Respawned player {} at {} team spawn", playerUuid, team);
     }
 
     private void fallbackRespawn(@Nonnull World world, @Nonnull Ref<EntityStore> playerReference, @Nonnull CommandBuffer<EntityStore> commandBuffer) {
@@ -65,7 +70,10 @@ public class CTFRespawnController implements RespawnController {
         ISpawnProvider spawnProvider = world.getWorldConfig().getSpawnProvider();
         if (spawnProvider != null) {
             Transform spawnPoint = spawnProvider.getSpawnPoint(playerReference, commandBuffer);
-            Teleport teleportComponent = Teleport.createForPlayer(spawnPoint);
+            Teleport teleportComponent = new Teleport(
+                spawnPoint.getPosition(),
+                spawnPoint.getRotation()
+            );
             commandBuffer.addComponent(playerReference, Teleport.getComponentType(), teleportComponent);
         }
     }

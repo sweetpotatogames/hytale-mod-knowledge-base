@@ -10,6 +10,7 @@ import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.SimpleInstantInteraction;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import javax.annotation.Nonnull;
@@ -46,9 +47,16 @@ public class CTFSetupCycleInteraction extends SimpleInstantInteraction {
             return;
         }
 
-        // Check if player has op/admin permissions
-        if (!playerComponent.isOp()) {
-            playerComponent.sendMessage(Message.raw("§cYou need operator permissions to use the CTF Setup Tool."));
+        // Get PlayerRef for messaging
+        @SuppressWarnings("deprecation")
+        PlayerRef playerRef = playerComponent.getPlayerRef();
+        if (playerRef == null) {
+            return;
+        }
+
+        // Check if player has admin permissions
+        if (!playerComponent.hasPermission("ctf.admin")) {
+            playerRef.sendMessage(Message.raw("§cYou need admin permissions to use the CTF Setup Tool."));
             return;
         }
 
@@ -63,13 +71,13 @@ public class CTFSetupCycleInteraction extends SimpleInstantInteraction {
         String color = getModeColor(nextMode);
 
         // Send mode change message
-        playerComponent.sendMessage(Message.raw(color + "CTF Setup Mode: " + nextMode.getDisplayName()));
-        playerComponent.sendMessage(Message.raw("§7" + nextMode.getDescription()));
+        playerRef.sendMessage(Message.raw(color + "CTF Setup Mode: " + nextMode.getDisplayName()));
+        playerRef.sendMessage(Message.raw("§7" + nextMode.getDescription()));
 
         // Show additional hints for certain modes
         switch (nextMode) {
-            case PROTECT_1 -> playerComponent.sendMessage(Message.raw("§7Tip: Use /ctf protect name <name> to set a region name first."));
-            case RED_CAPTURE, BLUE_CAPTURE -> playerComponent.sendMessage(Message.raw("§7Tip: Use /ctf setcapture <team> <radius> for custom radius."));
+            case PROTECT_1 -> playerRef.sendMessage(Message.raw("§7Tip: Use /ctf protect name <name> to set a region name first."));
+            case RED_CAPTURE, BLUE_CAPTURE -> playerRef.sendMessage(Message.raw("§7Tip: Use /ctf setcapture <team> <radius> for custom radius."));
         }
     }
 

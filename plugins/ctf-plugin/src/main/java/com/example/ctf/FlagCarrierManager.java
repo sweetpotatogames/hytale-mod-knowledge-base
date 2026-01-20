@@ -8,7 +8,7 @@ import com.hypixel.hytale.protocol.MovementSettings;
 import com.hypixel.hytale.protocol.packets.inventory.SetActiveSlot;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.entity.LivingEntity;
-import com.hypixel.hytale.server.core.entity.TransformComponent;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.movement.MovementManager;
 import com.hypixel.hytale.server.core.inventory.Inventory;
@@ -180,7 +180,7 @@ public class FlagCarrierManager {
             return false;
         }
 
-        Vector3d position = transform.getTranslation();
+        Vector3d position = transform.getPosition();
 
         // Check if carrier is in their team's capture zone
         if (!plugin.getArenaManager().isInCaptureZone(carrierTeam, position)) {
@@ -253,7 +253,7 @@ public class FlagCarrierManager {
 
             Vector3d deathPosition;
             if (transform != null) {
-                deathPosition = transform.getTranslation();
+                deathPosition = transform.getPosition();
             } else {
                 // Fallback to flag stand position
                 FlagTeam team = getCarriedFlagTeam(playerUuid);
@@ -639,38 +639,21 @@ public class FlagCarrierManager {
 
     /**
      * Gives the visual flag item to a player.
+     * TODO: Inventory API requires transaction system - implement when API is better understood
      */
     private void giveFlagItem(@Nonnull Player player, @Nonnull FlagTeam team) {
-        String itemId = team.getFlagItemId();
-        ItemStack flagStack = new ItemStack(itemId, 1);
-
-        // Place flag in slot 0
-        Inventory inventory = player.getInventory();
-        inventory.getHotbar().setItemStack(FLAG_SLOT, flagStack);
-
-        // Mark equipment as needing update for visual sync
-        LivingEntity entity = player;
-        entity.markEquipmentNetworkOutdated();
+        // TODO: ItemContainer uses transaction-based API, not direct setItemStack
+        // The flag visual item feature is disabled until proper inventory API integration
+        plugin.getLogger().atInfo().log("Flag visual item feature pending inventory API implementation");
     }
 
     /**
      * Removes the flag item from a player's inventory.
+     * TODO: Inventory API requires transaction system - implement when API is better understood
      */
     private void removeFlagItem(@Nonnull Player player, @Nonnull FlagTeam team) {
-        Inventory inventory = player.getInventory();
-        ItemStack slotItem = inventory.getHotbar().getItemStack(FLAG_SLOT);
-
-        // Only remove if it's actually a flag
-        if (slotItem != null && !ItemStack.isEmpty(slotItem)) {
-            String itemId = slotItem.getItem().getId();
-            if (itemId != null && itemId.startsWith("CTF_Flag")) {
-                inventory.getHotbar().setItemStack(FLAG_SLOT, ItemStack.EMPTY);
-
-                // Mark equipment as needing update
-                LivingEntity entity = player;
-                entity.markEquipmentNetworkOutdated();
-            }
-        }
+        // TODO: ItemContainer uses transaction-based API, not direct setItemStack
+        // The flag visual item feature is disabled until proper inventory API implementation
     }
 
     /**
