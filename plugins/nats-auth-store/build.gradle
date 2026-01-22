@@ -43,6 +43,12 @@ javadoc {
     options.addStringOption('Xdoclint:-missing', '-quiet')
 }
 
+// Ensure debug info is included in compiled classes for debugging
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << '-g'  // Include all debug info (lines, vars, source)
+    options.encoding = 'UTF-8'
+}
+
 repositories {
     mavenCentral()
 }
@@ -100,12 +106,58 @@ def createServerRunArguments(String srcDir) {
     return programParameters
 }
 
+// Creates run configurations in IDEA for running and debugging the Hytale server
 idea.project.settings.runConfigurations {
+    // Run configuration that uses the built JAR
+    // Note: Run 'gradle jar' before using this configuration, or use 'gradle runServer' instead
     'HytaleServer'(org.jetbrains.gradle.ext.Application) {
         mainClass = 'com.hypixel.hytale.Main'
         moduleName = project.idea.module.name + '.main'
-        programParameters = createServerRunArguments(sourceSets.main.java.srcDirs.first().parentFile.absolutePath)
+        programParameters = createServerRunArguments("\$PROJECT_DIR\$/build/libs/${project.name}-${version}.jar")
         workingDirectory = serverRunDir.absolutePath
+    }
+    // Remote debug configuration for attaching to a running server
+    'Attach to HytaleServer'(org.jetbrains.gradle.ext.Remote) {
+        host = 'localhost'
+        port = (project.findProperty('debug_port') ?: '5005').toInteger()
+        transport = 'SOCKET'
+        mode = 'ATTACH'
+    }
+}
+
+// Creates a launch.json file for VSCode with configurations for running and debugging
+tasks.register('generateVSCodeLaunch') {
+    def vscodeDir = file("$projectDir/.vscode")
+    def launchFile = file("$vscodeDir/launch.json")
+    doLast {
+        if (!vscodeDir.exists()) {
+            vscodeDir.mkdirs()
+        }
+        def debugPort = project.findProperty('debug_port') ?: '5005'
+        def programParams = createServerRunArguments("\${workspaceFolder}/build/libs/${project.name}-${version}.jar")
+        def launchConfig = [
+            version: "0.2.0",
+            configurations: [
+                [
+                    type: "java",
+                    name: "HytaleServer (Launch)",
+                    request: "launch",
+                    mainClass: "com.hypixel.hytale.Main",
+                    args: programParams,
+                    cwd: "\${workspaceFolder}/run",
+                    preLaunchTask: "gradle: jar"
+                ],
+                [
+                    type: "java",
+                    name: "Attach to HytaleServer",
+                    request: "attach",
+                    hostName: "localhost",
+                    port: debugPort.toInteger()
+                ]
+            ]
+        ]
+        launchFile.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(launchConfig))
+        println "Generated .vscode/launch.json with debug attach configuration on port ${debugPort}"
     }
 }
 
@@ -135,20 +187,69 @@ tasks.register('deployPlugin', Copy) {
     }
 }
 
+// Task to run the Hytale server with this plugin JAR loaded (with debug enabled)
 tasks.register('runServer', JavaExec) {
-    dependsOn 'build'
+    dependsOn 'jar'
     group = 'hytale'
-    description = 'Runs the Hytale server with this plugin loaded'
+    description = 'Runs the Hytale server with this plugin JAR loaded (with debug)'
 
     def serverJar = file("$hytaleHome/install/$patchline/package/game/latest/Server/HytaleServer.jar")
     def assetsZip = file("$hytaleHome/install/$patchline/package/game/latest/Assets.zip")
+    def pluginJar = tasks.jar.archiveFile.get().asFile
 
     classpath = files(serverJar)
     mainClass = 'com.hypixel.hytale.Main'
     workingDir = serverRunDir
 
-    def modPaths = []
-    modPaths << sourceSets.main.java.srcDirs.first().parentFile.absolutePath
+    // Build the mod paths - use the built JAR
+    def modPaths = [pluginJar.absolutePath]
+    if (load_user_mods.toBoolean()) {
+        modPaths << "$hytaleHome/UserData/Mods"
+    }
+
+    args = [
+        '--allow-op',
+        '--disable-sentry',
+        "--assets=${assetsZip.absolutePath}",
+        "--mods=${modPaths.join(',')}"
+    ]
+
+    // JVM debug arguments for remote debugging
+    def debugPort = project.findProperty('debug_port') ?: '5005'
+    def debugSuspend = project.findProperty('debug_suspend')?.toBoolean() ? 'y' : 'n'
+    jvmArgs = [
+        "-agentlib:jdwp=transport=dt_socket,server=y,suspend=${debugSuspend},address=*:${debugPort}"
+    ]
+
+    standardInput = System.in
+
+    doFirst {
+        println "Starting Hytale Server with debug on port ${debugPort}..."
+        println "Plugin JAR: ${pluginJar.absolutePath}"
+        println "Working directory: ${serverRunDir.absolutePath}"
+        println "Loading mods from: ${modPaths.join(', ')}"
+        if (debugSuspend == 'y') {
+            println "Server will wait for debugger to attach before starting."
+        }
+    }
+}
+
+// Task to run the Hytale server without debug (for production testing)
+tasks.register('runServerNoDebug', JavaExec) {
+    dependsOn 'jar'
+    group = 'hytale'
+    description = 'Runs the Hytale server with this plugin JAR loaded (no debug)'
+
+    def serverJar = file("$hytaleHome/install/$patchline/package/game/latest/Server/HytaleServer.jar")
+    def assetsZip = file("$hytaleHome/install/$patchline/package/game/latest/Assets.zip")
+    def pluginJar = tasks.jar.archiveFile.get().asFile
+
+    classpath = files(serverJar)
+    mainClass = 'com.hypixel.hytale.Main'
+    workingDir = serverRunDir
+
+    // Build the mod paths - use the built JAR
+    def modPaths = [pluginJar.absolutePath]
     if (load_user_mods.toBoolean()) {
         modPaths << "$hytaleHome/UserData/Mods"
     }
@@ -164,20 +265,22 @@ tasks.register('runServer', JavaExec) {
 
     doFirst {
         println "Starting Hytale Server..."
+        println "Plugin JAR: ${pluginJar.absolutePath}"
         println "Working directory: ${serverRunDir.absolutePath}"
         println "Loading mods from: ${modPaths.join(', ')}"
     }
 }
 
-// Task to run server with just this plugin (isolated)
+// Task to run server with just this plugin (isolated, with debug)
 tasks.register('runServerIsolated', JavaExec) {
-    dependsOn 'build'
+    dependsOn 'jar'
     group = 'hytale'
-    description = 'Runs the Hytale server with ONLY this plugin loaded (isolated)'
+    description = 'Runs the Hytale server with ONLY this plugin loaded (isolated, with debug)'
 
     def serverJar = file("$hytaleHome/install/$patchline/package/game/latest/Server/HytaleServer.jar")
     def assetsZip = file("$hytaleHome/install/$patchline/package/game/latest/Assets.zip")
     def isolatedModsDir = file("$projectDir/run/isolated-mods")
+    def pluginJar = tasks.jar.archiveFile.get().asFile
 
     classpath = files(serverJar)
     mainClass = 'com.hypixel.hytale.Main'
@@ -190,6 +293,13 @@ tasks.register('runServerIsolated', JavaExec) {
         "--mods=${isolatedModsDir.absolutePath}"
     ]
 
+    // JVM debug arguments for remote debugging
+    def debugPort = project.findProperty('debug_port') ?: '5005'
+    def debugSuspend = project.findProperty('debug_suspend')?.toBoolean() ? 'y' : 'n'
+    jvmArgs = [
+        "-agentlib:jdwp=transport=dt_socket,server=y,suspend=${debugSuspend},address=*:${debugPort}"
+    ]
+
     standardInput = System.in
 
     doFirst {
@@ -199,16 +309,19 @@ tasks.register('runServerIsolated', JavaExec) {
         }
         isolatedModsDir.mkdirs()
 
-        // Copy only the built JAR (renamed to remove version for consistency)
+        // Copy the built JAR
         copy {
-            from tasks.jar
+            from pluginJar
             into isolatedModsDir
             rename { "${project.name}.jar" }
         }
-        println "Starting Hytale Server (isolated mode)..."
+        println "Starting Hytale Server (isolated mode) with debug on port ${debugPort}..."
         println "Working directory: ${serverRunDir.absolutePath}"
         println "Mods directory: ${isolatedModsDir.absolutePath}"
         println "Loading ONLY: ${project.name}.jar"
+        if (debugSuspend == 'y') {
+            println "Server will wait for debugger to attach before starting."
+        }
     }
 }
 
@@ -240,4 +353,59 @@ tasks.register('runServerDeployed', JavaExec) {
         println "Working directory: ${serverRunDir.absolutePath}"
         println "Loading mods from: ${modsDir.absolutePath}"
     }
+}
+
+// Task to launch the Hytale client/launcher
+tasks.register('runClient', Exec) {
+    group = 'hytale'
+    description = 'Launches the Hytale client/launcher'
+
+    def launcherPath = project.findProperty('hytale_launcher') ?: ''
+
+    doFirst {
+        if (launcherPath.isEmpty()) {
+            // Try common locations based on OS
+            def os = OperatingSystem.current()
+            if (os.isWindows()) {
+                def possiblePaths = [
+                    "${System.getProperty('user.home')}/AppData/Local/Programs/Hytale Launcher/Hytale Launcher.exe",
+                    "${System.getProperty('user.home')}/AppData/Local/Hytale/Hytale.exe",
+                    "C:/Program Files/Hytale Launcher/Hytale Launcher.exe",
+                    "C:/Program Files (x86)/Hytale Launcher/Hytale Launcher.exe"
+                ]
+                launcherPath = possiblePaths.find { file(it).exists() } ?: ''
+            } else if (os.isMacOsX()) {
+                def possiblePaths = [
+                    "/Applications/Hytale Launcher.app/Contents/MacOS/Hytale Launcher",
+                    "${System.getProperty('user.home')}/Applications/Hytale Launcher.app/Contents/MacOS/Hytale Launcher"
+                ]
+                launcherPath = possiblePaths.find { file(it).exists() } ?: ''
+            } else if (os.isLinux()) {
+                def possiblePaths = [
+                    "${System.getProperty('user.home')}/.local/share/applications/hytale-launcher",
+                    "/usr/bin/hytale-launcher",
+                    "/opt/hytale-launcher/hytale-launcher"
+                ]
+                launcherPath = possiblePaths.find { file(it).exists() } ?: ''
+            }
+        }
+
+        if (launcherPath.isEmpty()) {
+            throw new GradleException(
+                "Hytale launcher not found. Set 'hytale_launcher' property in gradle.properties " +
+                "to the path of your Hytale launcher executable."
+            )
+        }
+        println "Launching Hytale client: ${launcherPath}"
+    }
+
+    def os = OperatingSystem.current()
+    if (os.isWindows()) {
+        commandLine 'cmd', '/c', 'start', '', launcherPath
+    } else {
+        commandLine launcherPath
+    }
+
+    // Don't fail if the client exits with non-zero (user closed it)
+    ignoreExitValue = true
 }
